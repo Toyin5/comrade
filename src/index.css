@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@theme {
+  --color-glass: rgba(255, 255, 255, 0.1);
+  --color-glass-border: rgba(255, 255, 255, 0.2);
+}
+
+body {
+  @apply bg-gray-900 text-white antialiased;
+  background-image: radial-gradient(circle at 50% 0%, #1f2937 0%, #111827 100%);
+  min-height: 100vh;
+}
+
+.glass-panel {
+  @apply bg-white/10 backdrop-blur-lg border border-white/20 shadow-xl;
+}
+
+.btn-primary {
+  @apply px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-semibold shadow-md transition-all active:scale-95;
+}
+
+.btn-secondary {
+  @apply px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-xl font-medium border border-gray-600 transition-all active:scale-95;
+}
