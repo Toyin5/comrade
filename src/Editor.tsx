@@ -20,8 +20,12 @@ interface OverlayItem {
 export const MemeEditor: React.FC<Props> = ({ imageUrl, onBack }) => {
   const [overlays, setOverlays] = useState<OverlayItem[]>([]);
   const [selectedId, selectShape] = useState<string | null>(null);
-  const [overlayImage, setOverlayImage] = useState<HTMLImageElement | null>(null);
-  const [uploadedImage, setUploadedImage] = useState<HTMLImageElement | null>(null);
+  const [overlayImage, setOverlayImage] = useState<HTMLImageElement | null>(
+    null
+  );
+  const [uploadedImage, setUploadedImage] = useState<HTMLImageElement | null>(
+    null
+  );
   const [loading, setLoading] = useState(true);
   const stageRef = useRef<any>(null);
 
@@ -32,35 +36,35 @@ export const MemeEditor: React.FC<Props> = ({ imageUrl, onBack }) => {
     img.onload = () => setOverlayImage(img);
   }, []);
 
-  // Load uploaded image + detect faces
   useEffect(() => {
-    const process = async () => {
-      const img = new Image();
-      img.src = imageUrl;
-      img.onload = async () => {
-        setUploadedImage(img);
-        setLoading(true);
-        try {
-          await faceapi.nets.ssdMobilenetv1.loadFromUri("/models");
-          const detections = await faceapi.detectAllFaces(img);
-          const newOverlays = detections.map((d, i) => ({
-            id: `face-${i}`,
-            x: d.box.x,
-            y: d.box.y - d.box.height * 0.5, // Adjust position slightly up
-            width: d.box.width,
-            height: d.box.height,
-            rotation: 0,
-          }));
-          setOverlays(newOverlays);
-        } catch (e) {
-          console.error("Face detection failed:", e);
-        }
-        setLoading(false);
-      };
-    };
     process();
     process();
   }, [imageUrl]);
+
+  const process = async () => {
+    const img = new Image();
+    img.src = imageUrl;
+    img.onload = async () => {
+      setUploadedImage(img);
+      setLoading(true);
+      try {
+        await faceapi.nets.ssdMobilenetv1.loadFromUri("/models");
+        const detections = await faceapi.detectAllFaces(img);
+        const newOverlays = detections.map((d, i) => ({
+          id: `face-${i}`,
+          x: d.box.x,
+          y: d.box.y - d.box.height * 0.1,
+          width: d.box.width,
+          height: d.box.height,
+          rotation: 0,
+        }));
+        setOverlays(newOverlays);
+      } catch (e) {
+        console.error("Face detection failed:", e);
+      }
+      setLoading(false);
+    };
+  };
 
   // Handle keyboard deletion
   useEffect(() => {
@@ -70,14 +74,14 @@ export const MemeEditor: React.FC<Props> = ({ imageUrl, onBack }) => {
       }
     };
 
-    window.addEventListener("keydown", handleKeyDown);
+    globalThis.addEventListener("keydown", handleKeyDown);
     return () => {
-      window.removeEventListener("keydown", handleKeyDown);
+      globalThis.removeEventListener("keydown", handleKeyDown);
     };
   }, [selectedId, overlays]); // Re-bind when selection or overlays change to ensure fresh state
 
   const checkDeselect = (e: any) => {
-    // deselect when clicked on empty area
+    // deselect when clicked on outside area
     const clickedOnEmpty =
       e.target === e.target.getStage() || e.target.name() === "backgroundImage";
     if (clickedOnEmpty) {
@@ -87,12 +91,53 @@ export const MemeEditor: React.FC<Props> = ({ imageUrl, onBack }) => {
 
   const addOverlay = () => {
     if (!uploadedImage) return;
+    const overlayWidth = 100;
+    const overlayHeight = 100;
+    const margin = 12;
+    const stepX = overlayWidth + 12; // horizontal step between overlays
+    const stepY = overlayHeight + 12; // vertical step when wrapping
+
+    // Determine next position based on last overlay (increment X, then wrap Y)
+    let x = margin;
+    let y = margin;
+
+    const last = overlays.length ? overlays.at(-1) : null;
+    if (last) {
+      const nextX = last.x + stepX;
+      // If next X fits inside image bounds, place there
+      if (nextX + overlayWidth <= uploadedImage.width - margin) {
+        x = nextX;
+        y = last.y;
+      } else {
+        // Wrap to next row (increase Y) and reset X to margin
+        const nextY = last.y + stepY;
+        x = margin;
+        y =
+          nextY + overlayHeight <= uploadedImage.height - margin
+            ? nextY
+            : margin;
+      }
+    }
+
+    // Clamp to image bounds just in case
+    x = Math.max(
+      margin,
+      Math.min(x, Math.max(margin, uploadedImage.width - overlayWidth - margin))
+    );
+    y = Math.max(
+      margin,
+      Math.min(
+        y,
+        Math.max(margin, uploadedImage.height - overlayHeight - margin)
+      )
+    );
+
     const newOverlay: OverlayItem = {
       id: `manual-${Date.now()}`,
-      x: uploadedImage.width / 2 - 50,
-      y: uploadedImage.height / 2 - 50,
-      width: 100,
-      height: 100,
+      x,
+      y,
+      width: overlayWidth,
+      height: overlayHeight,
       rotation: 0,
     };
     setOverlays([...overlays, newOverlay]);
@@ -104,9 +149,13 @@ export const MemeEditor: React.FC<Props> = ({ imageUrl, onBack }) => {
     if (selectedId === id) selectShape(null);
   };
 
+  const handleDetect = async () => {
+    // rerun face detection
+    await process();
+  };
+
   const handleExport = () => {
     if (!stageRef.current) return;
-    // Deselect before export to hide transformer
     selectShape(null);
     setTimeout(() => {
       const uri = stageRef.current.toDataURL();
@@ -159,7 +208,9 @@ export const MemeEditor: React.FC<Props> = ({ imageUrl, onBack }) => {
                   onSelect={() => selectShape(item.id)}
                   onChange={(newAttrs) => {
                     const newOverlays = overlays.slice();
-                    const index = newOverlays.findIndex((o) => o.id === item.id);
+                    const index = newOverlays.findIndex(
+                      (o) => o.id === item.id
+                    );
                     newOverlays[index] = newAttrs;
                     setOverlays(newOverlays);
                   }}
@@ -174,12 +225,19 @@ export const MemeEditor: React.FC<Props> = ({ imageUrl, onBack }) => {
       <div className="w-full lg:w-80 flex flex-col gap-4">
         <div className="glass-panel p-6 rounded-2xl space-y-4">
           <h3 className="text-xl font-bold text-white mb-4">Tools</h3>
-          
+
           <button
             onClick={addOverlay}
             className="w-full btn-primary flex items-center justify-center gap-2"
           >
             <span>➕</span> Add Comrade
+          </button>
+
+          <button
+            onClick={handleDetect}
+            className="w-full btn-primary flex items-center justify-center gap-2"
+          >
+            <span>⚡</span> Auto Add Comrades
           </button>
 
           <button
@@ -193,16 +251,13 @@ export const MemeEditor: React.FC<Props> = ({ imageUrl, onBack }) => {
 
           <button
             onClick={handleExport}
-            className="w-full btn-primary bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 border-none"
+            className="w-full btn-primary bg-linear-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 border-none"
           >
             <span>💾</span> Export Meme
           </button>
 
           {onBack && (
-            <button
-              onClick={onBack}
-              className="w-full btn-secondary mt-2"
-            >
+            <button onClick={onBack} className="w-full btn-secondary mt-2">
               ← Choose Another Image
             </button>
           )}
