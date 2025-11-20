@@ -1,73 +1,77 @@
-# React + TypeScript + Vite
+# Comrade
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Comrade is a small web app for creating humorous memes by placing a "comrade" overlay onto images. It uses client-side face detection (face-api.js) to suggest overlay placements and provides a simple editor to add, move, resize, rotate, and export images.
 
-Currently, two official plugins are available:
+**Key Features**
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **Face detection:** automatically suggests placements using `face-api.js` models stored in `public/models`.
+- **Interactive editor:** drag, resize, rotate, select, and delete overlays.
+- **Incremental placement:** new overlays are placed incrementally across the image (wraps rows when needed).
+- **Export:** save your final meme as a PNG.
 
-## React Compiler
+**Files of Interest**
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- `src/Editor.tsx`: main editor canvas and overlay logic.
+- `src/ImageUploader.tsx`: image upload UI.
+- `public/models`: pre-downloaded `face-api.js` models used for detection.
+- `public/comrade.png`: overlay image used by the editor (place your comrade PNG here).
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+Prerequisites
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- Node.js (16+) and npm installed.
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+Install
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Run (development)
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run dev
 ```
+
+Build
+
+```bash
+npm run build
+npm run preview
+```
+
+## Usage
+
+- Open the app in your browser (Vite will print the URL, usually `http://localhost:5173`).
+- Upload an image using the uploader.
+- The app will attempt to detect faces and add suggested overlays.
+- Use the **Add Comrade** button to place additional overlays; they are placed incrementally across the X axis and wrap to the Y axis to avoid stacking.
+- Select an overlay to move/resize/rotate it. Press `Delete`/`Backspace` to remove the selected overlay.
+- Click **Export Meme** to download the final image as `comrade-meme.png`.
+
+## Notes & Troubleshooting
+
+- If face detection doesn't work, ensure the model files exist at `public/models` and are reachable by the app.
+- The overlay image must be available at `public/comrade.png` (or update `src/Editor.tsx` accordingly).
+- Linting or Tailwind class warnings do not affect runtime — address them if you want to clean up styles.
+
+## Contributing
+
+- Feel free to open issues or PRs for features or fixes. Recommended work flow:
+
+```bash
+git checkout -b my-feature
+# make changes
+git commit -am "Add feature"
+git push origin my-feature
+```
+
+## License
+
+MIT
+
+## Acknowledgements
+
+- `face-api.js` for client-side face detection.
+- `react-konva` for canvas interactions.
